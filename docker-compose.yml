@@ -1,0 +1,18 @@
+services:
+  claude-proxy:
+    build: .
+    container_name: claude-proxy
+    ports:
+      - "3456:3456"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      # Mount Claude config from host (read-write for debug logs)
+      - C:/Users/wouter.bon/.claude:/root/.claude
+    networks:
+      - ollama-network
+    restart: unless-stopped
+
+networks:
+  ollama-network:
+    external: true

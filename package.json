@@ -1,0 +1,9 @@
+{
+  "name": "claude-code-proxy",
+  "version": "1.0.0",
+  "description": "HTTP proxy for Claude Code CLI",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
