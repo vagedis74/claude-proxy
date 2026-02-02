@@ -1,7 +1,11 @@
-FROM node:20-slim
+FROM node:20-alpine
 
-# Update npm to latest to fix vulnerable transitive deps (tar, glob, cross-spawn)
-RUN npm install -g npm@latest
+# Update npm to latest and patch vulnerable tar in npm's bundled deps
+RUN npm install -g npm@latest \
+    && npm install -g tar@latest \
+    && NPM_DIR=$(dirname $(which npm))/../lib/node_modules/npm \
+    && rm -rf $NPM_DIR/node_modules/tar \
+    && ln -s $(npm root -g)/tar $NPM_DIR/node_modules/tar
 
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code
