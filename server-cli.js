@@ -2,16 +2,44 @@ const http = require('http');
 const { spawn } = require('child_process');
 
 const PORT = 3456;
+const BIND_HOST = process.env.BIND_HOST || '127.0.0.1';
+
+// Proxy authentication — set PROXY_API_KEY in env or .env
+const PROXY_API_KEY = process.env.PROXY_API_KEY;
+
+// CORS — comma-separated list of allowed origins (default: none)
+const ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '').split(',').filter(Boolean);
+
+function getCorsOrigin(req) {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.length === 0) return undefined;
+  if (ALLOWED_ORIGINS.includes(origin)) return origin;
+  return undefined;
+}
 
 const server = http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const corsOrigin = getCorsOrigin(req);
+  if (corsOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', corsOrigin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
-    res.writeHead(200);
+    res.writeHead(corsOrigin ? 200 : 403);
     res.end();
     return;
+  }
+
+  // Authenticate requests
+  if (PROXY_API_KEY) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || authHeader !== `Bearer ${PROXY_API_KEY}`) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized — set Authorization: Bearer <PROXY_API_KEY>' }));
+      return;
+    }
   }
 
   if (req.method !== 'POST') {
@@ -108,6 +136,8 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Claude CLI Proxy running on http://0.0.0.0:${PORT}`);
+server.listen(PORT, BIND_HOST, () => {
+  console.log(`Claude CLI Proxy running on http://${BIND_HOST}:${PORT}`);
+  console.log(`Proxy auth: ${PROXY_API_KEY ? 'ENABLED' : 'DISABLED (set PROXY_API_KEY to enable)'}`);
+  console.log(`CORS origins: ${ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS.join(', ') : 'none (CORS disabled)'}`);
 });

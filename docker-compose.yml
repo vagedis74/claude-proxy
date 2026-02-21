@@ -6,6 +6,9 @@ services:
       - "3456:3456"
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PROXY_API_KEY=${PROXY_API_KEY:?PROXY_API_KEY must be set in .env}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - BIND_HOST=0.0.0.0
     volumes:
       # Mount Claude config from host (read-write for debug logs)
       - C:/Users/wouter.bon/.claude:/root/.claude
